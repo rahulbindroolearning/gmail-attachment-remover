@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AttachmentRemover — Keep Emails, Ditch the Files</title>
+  <meta name="description" content="Remove heavy attachments from Gmail without losing the email. Keep the same thread, same sender, same timestamp. Free for the first 10 removals." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:       #1a9e5c;
+      --green-light: #e6f7ef;
+      --green-mid:   #d0f0e0;
+      --green-dark:  #116e3f;
+      --green-pale:  #f2fbf6;
+      --ink:         #0d1f14;
+      --ink-2:       #2a3d32;
+      --ink-3:       #52685c;
+      --border:      #d8e8df;
+      --white:       #ffffff;
+      --bg:          #f7fdf9;
+      --yellow:      #f5c842;
+      --red-soft:    #fef0f0;
+      --red:         #e05252;
+      --radius:      14px;
+      --shadow-sm:   0 1px 4px rgba(0,0,0,.06);
+      --shadow-md:   0 4px 24px rgba(0,0,0,.08);
+      --shadow-lg:   0 12px 48px rgba(0,0,0,.11);
+      --font:        'Plus Jakarta Sans', sans-serif;
+      --mono:        'DM Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body  { font-family: var(--font); color: var(--ink); background: var(--white); line-height: 1.6; overflow-x: hidden; }
+
+    /* ── Typography ────────────────────────────────────────────── */
+    h1 { font-size: clamp(2.4rem, 5.5vw, 3.8rem); font-weight: 800; line-height: 1.12; letter-spacing: -.03em; }
+    h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 800; line-height: 1.18; letter-spacing: -.025em; }
+    h3 { font-size: 1.15rem; font-weight: 700; }
+    p  { color: var(--ink-3); font-size: 1.05rem; line-height: 1.7; }
+
+    .label {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--green);
+      background: var(--green-light);
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 96px 0; }
+
+    /* ── Nav ───────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; max-width: 1120px; margin: 0 auto; padding: 0 24px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 1.1rem; color: var(--ink); text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 34px; height: 34px;
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--ink-2); font-size: .92rem; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--green); }
+    .nav-cta {
+      background: var(--green); color: #fff; padding: 9px 20px;
+      border-radius: 100px; font-size: .88rem; font-weight: 700;
+      text-decoration: none; transition: background .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .nav-cta:hover { background: var(--green-dark); transform: translateY(-1px); }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      background: var(--green-pale);
+      padding: 100px 0 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -120px; right: -120px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(26,158,92,.12) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 64px;
+      max-width: 1120px; margin: 0 auto; padding: 0 24px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 100px; padding: 6px 14px 6px 8px;
+      font-size: .82rem; font-weight: 600; color: var(--ink-2);
+      margin-bottom: 24px; box-shadow: var(--shadow-sm);
+    }
+    .hero-badge-dot {
+      width: 8px; height: 8px; background: var(--green);
+      border-radius: 50%; animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(1.3); }
+    }
+    .hero h1 { margin-bottom: 20px; }
+    .hero h1 span { color: var(--green); }
+    .hero > .hero-inner > .hero-text > p { font-size: 1.15rem; margin-bottom: 36px; }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green); color: #fff;
+      padding: 14px 28px; border-radius: 100px;
+      font-weight: 700; font-size: 1rem; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(26,158,92,.35);
+      transition: background .2s, transform .15s, box-shadow .2s;
+    }
+    .btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,158,92,.4); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--ink-2); font-weight: 600; font-size: .95rem;
+      text-decoration: none; transition: color .2s;
+    }
+    .btn-secondary:hover { color: var(--green); }
+    .btn-secondary svg { transition: transform .2s; }
+    .btn-secondary:hover svg { transform: translateX(3px); }
+    .hero-stars { display: flex; align-items: center; gap: 8px; margin-top: 28px; }
+    .stars { color: var(--yellow); font-size: 1rem; letter-spacing: 2px; }
+    .hero-stars small { font-size: .82rem; color: var(--ink-3); }
+
+    /* Hero visual — mock Gmail card */
+    .hero-visual {
+      position: relative;
+      animation: float 5s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+    .gmail-card {
+      background: var(--white); border-radius: 18px;
+      box-shadow: var(--shadow-lg); overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .gmail-card-header {
+      background: var(--green); padding: 16px 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .gmail-card-header-icon { font-size: 20px; }
+    .gmail-card-header-text { color: #fff; font-weight: 700; font-size: .95rem; }
+    .gmail-card-header-sub  { color: rgba(255,255,255,.75); font-size: .78rem; }
+    .gmail-card-body { padding: 20px; }
+    .gmail-email-meta { font-size: .78rem; color: var(--ink-3); margin-bottom: 14px; }
+    .gmail-email-meta strong { color: var(--ink); }
+    .attachment-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 9px; margin-bottom: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      font-size: .82rem; transition: all .3s;
+    }
+    .attachment-row.checked { border-color: var(--green); background: var(--green-light); }
+    .att-left { display: flex; align-items: center; gap: 8px; }
+    .att-icon { font-size: 18px; }
+    .att-name { font-weight: 600; color: var(--ink-2); }
+    .att-size { color: var(--ink-3); font-size: .75rem; }
+    .att-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; }
+    .att-check.on { background: var(--green); border-color: var(--green); color: #fff; font-size: 11px; }
+    .gmail-btn {
+      width: 100%; margin-top: 16px; padding: 11px;
+      background: var(--green); color: #fff; border: none;
+      border-radius: 9px; font-weight: 700; font-size: .9rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .gmail-free-badge {
+      margin-top: 10px; text-align: center;
+      font-size: .75rem; color: var(--ink-3);
+    }
+    .gmail-free-badge span { color: var(--green); font-weight: 700; }
+
+    /* floating badge */
+    .hero-float-badge {
+      position: absolute; bottom: -16px; left: -24px;
+      background: var(--white); border-radius: 12px;
+      box-shadow: var(--shadow-md); padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      border: 1px solid var(--border);
+      animation: float 5s ease-in-out infinite; animation-delay: .8s;
+    }
+    .hero-float-icon { width: 36px; height: 36px; background: var(--green-light); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .hero-float-text { font-size: .8rem; }
+    .hero-float-text strong { display: block; font-size: .88rem; color: var(--ink); }
+
+    /* ── Logos strip ────────────────────────────────────────────── */
+    .logos-strip {
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+    }
+    .logos-label { text-align: center; font-size: .8rem; color: var(--ink-3); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 20px; }
+    .logos-row { display: flex; align-items: center; justify-content: center; gap: 48px; flex-wrap: wrap; }
+    .logo-pill {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: .95rem; color: var(--ink-3);
+      opacity: .6; transition: opacity .2s;
+    }
+    .logo-pill:hover { opacity: 1; }
+    .logo-pill-icon { font-size: 22px; }
+
+    /* ── How it works ──────────────────────────────────────────── */
+    .how { background: var(--white); }
+    .how-header { text-align: center; max-width: 600px; margin: 0 auto 64px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 32px 28px;
+      position: relative; transition: box-shadow .2s, transform .2s;
+    }
+    .step-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--green); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; margin-bottom: 20px;
+    }
+    .step-card h3 { margin-bottom: 10px; }
+    .step-connector {
+      position: absolute; top: 50px; right: -13px;
+      width: 26px; height: 2px; background: var(--border); z-index: 1;
+    }
+    .step-connector::after {
+      content: '›'; position: absolute; right: -8px; top: -11px;
+      color: var(--border); font-size: 18px;
+    }
+
+    /* ── Features ──────────────────────────────────────────────── */
+    .features { background: var(--green-pale); }
+    .features-header { text-align: center; max-width: 600px; margin: 0 auto 64px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .feat-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .feat-icon {
+      width: 48px; height: 48px; border-radius: 13px;
+      background: var(--green-light); display: flex; align-items: center;
+      justify-content: center; font-size: 22px; margin-bottom: 18px;
+    }
+    .feat-card h3 { margin-bottom: 8px; }
+
+    /* ── Feature highlight (alternating) ───────────────────────── */
+    .highlight { background: var(--white); }
+    .highlight-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 80px; margin-bottom: 96px;
+    }
+    .highlight-row:last-child { margin-bottom: 0; }
+    .highlight-row.reverse { direction: rtl; }
+    .highlight-row.reverse > * { direction: ltr; }
+    .highlight-text h2 { margin-bottom: 16px; }
+    .highlight-text p  { margin-bottom: 24px; }
+    .check-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .check-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: .95rem; color: var(--ink-2); font-weight: 500;
+    }
+    .check-list li::before {
+      content: '✓'; flex-shrink: 0;
+      width: 22px; height: 22px; background: var(--green-light);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 800; color: var(--green);
+      line-height: 22px; text-align: center;
+    }
+    .highlight-visual {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 18px; padding: 32px; box-shadow: var(--shadow-md);
+      min-height: 280px; display: flex; flex-direction: column; justify-content: center;
+    }
+
+    /* thread visual */
+    .thread-msg {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+      font-size: .82rem;
+    }
+    .thread-msg.cleaned { border-color: var(--green); background: var(--green-light); }
+    .thread-msg-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .thread-msg-from { font-weight: 700; color: var(--ink); font-size: .85rem; }
+    .thread-msg-time { color: var(--ink-3); font-size: .75rem; }
+    .thread-msg-body { color: var(--ink-3); }
+    .thread-msg-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--green); color: #fff;
+      font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 100px;
+      margin-top: 8px;
+    }
+    .thread-msg-trash {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--red-soft); color: var(--red);
+      font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 100px;
+      margin-top: 8px;
+    }
+
+    /* banner preview */
+    .banner-preview {
+      background: #f0f4f8; border: 1px solid #c5d0de;
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; font-size: .8rem;
+    }
+    .banner-preview-title { font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+    .banner-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .banner-key { color: #888; width: 60px; flex-shrink: 0; }
+    .banner-val { color: var(--ink-2); }
+    .banner-val.removed { color: var(--red); font-weight: 600; }
+    .email-body-preview { color: var(--ink-3); font-size: .8rem; line-height: 1.5; padding-top: 10px; border-top: 1px solid var(--border); }
+
+    /* privacy visual */
+    .privacy-diagram {
+      display: flex; flex-direction: column; gap: 8px; font-size: .82rem;
+    }
+    .priv-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--white);
+    }
+    .priv-row.blocked { background: var(--red-soft); border-color: #f5c6c6; }
+    .priv-row.allowed { background: var(--green-light); border-color: var(--green); }
+    .priv-label { flex: 1; font-weight: 600; color: var(--ink-2); }
+    .priv-icon { font-size: 16px; }
+    .priv-badge {
+      font-size: .7rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .priv-badge.no  { background: var(--red-soft); color: var(--red); }
+    .priv-badge.yes { background: var(--green-light); color: var(--green-dark); }
+
+    /* ── Pricing ────────────────────────────────────────────────── */
+    .pricing { background: var(--green-pale); }
+    .pricing-header { text-align: center; max-width: 560px; margin: 0 auto 56px; }
+    .pricing-toggle { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 48px; }
+    .toggle-label { font-size: .9rem; font-weight: 600; color: var(--ink-3); }
+    .toggle-label.active { color: var(--ink); }
+    .toggle {
+      width: 48px; height: 26px; background: var(--green); border-radius: 100px;
+      position: relative; cursor: pointer; transition: background .2s;
+    }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; background: #fff;
+      border-radius: 50%; transition: transform .2s;
+    }
+    .toggle.annual::after { transform: translateX(22px); }
+    .save-badge {
+      background: var(--yellow); color: var(--ink); font-size: .72rem;
+      font-weight: 700; padding: 2px 8px; border-radius: 100px;
+    }
+    .pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 780px; margin: 0 auto; }
+    .pricing-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .pricing-card.pro {
+      border-color: var(--green); background: var(--white);
+      box-shadow: 0 8px 40px rgba(26,158,92,.18);
+      position: relative; overflow: hidden;
+    }
+    .pricing-card.pro::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--green);
+    }
+    .pricing-tier { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+    .pricing-tier.pro { color: var(--green); }
+    .pricing-price { font-size: 2.8rem; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+    .pricing-price sup { font-size: 1.4rem; vertical-align: super; font-weight: 700; }
+    .pricing-price .period { font-size: 1rem; font-weight: 500; color: var(--ink-3); }
+    .pricing-desc { font-size: .88rem; color: var(--ink-3); margin-bottom: 28px; margin-top: 8px; }
+    .pricing-btn {
+      display: block; width: 100%; padding: 13px;
+      border-radius: 100px; text-align: center; font-weight: 700;
+      font-size: .95rem; text-decoration: none; transition: all .2s;
+    }
+    .pricing-btn.free-btn {
+      background: var(--bg); color: var(--ink-2);
+      border: 1px solid var(--border);
+    }
+    .pricing-btn.free-btn:hover { background: var(--border); }
+    .pricing-btn.pro-btn {
+      background: var(--green); color: #fff;
+      box-shadow: 0 4px 16px rgba(26,158,92,.3);
+    }
+    .pricing-btn.pro-btn:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .pricing-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .pricing-features-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .pricing-features-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: .9rem; color: var(--ink-2);
+    }
+    .pricing-features-list li .pf-icon { flex-shrink: 0; font-size: 15px; }
+    .pf-icon.yes { color: var(--green); }
+    .pf-icon.no  { color: #ccc; }
+
+    /* ── FAQ ────────────────────────────────────────────────────── */
+    .faq { background: var(--white); }
+    .faq-header { text-align: center; max-width: 560px; margin: 0 auto 56px; }
+    .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; margin: 0 auto; }
+    .faq-item {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+      transition: box-shadow .2s;
+    }
+    .faq-item:hover { box-shadow: var(--shadow-sm); }
+    .faq-q { font-weight: 700; color: var(--ink); margin-bottom: 10px; font-size: .95rem; }
+    .faq-a { font-size: .88rem; color: var(--ink-3); line-height: 1.65; }
+
+    /* ── CTA banner ─────────────────────────────────────────────── */
+    .cta-banner {
+      background: var(--green); padding: 80px 0; text-align: center;
+    }
+    .cta-banner h2 { color: #fff; margin-bottom: 12px; }
+    .cta-banner p  { color: rgba(255,255,255,.8); font-size: 1.1rem; margin-bottom: 36px; }
+    .btn-white {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; color: var(--green);
+      padding: 15px 32px; border-radius: 100px;
+      font-weight: 800; font-size: 1rem; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+      transition: transform .15s, box-shadow .2s;
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+    .cta-sub { margin-top: 16px; font-size: .85rem; color: rgba(255,255,255,.65); }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    footer {
+      background: var(--ink); color: rgba(255,255,255,.5);
+      padding: 48px 0 32px;
+    }
+    .footer-inner {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px; max-width: 1120px; margin: 0 auto; padding: 0 24px;
+      padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-brand-name { color: #fff; font-weight: 800; font-size: 1.1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .footer-brand-icon { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .footer-desc { font-size: .88rem; line-height: 1.65; max-width: 260px; }
+    .footer-col h4 { color: rgba(255,255,255,.85); font-size: .8rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul a { color: rgba(255,255,255,.5); text-decoration: none; font-size: .88rem; transition: color .2s; }
+    .footer-col ul a:hover { color: rgba(255,255,255,.9); }
+    .footer-bottom { display: flex; justify-content: space-between; align-items: center; max-width: 1120px; margin: 0 auto; padding: 24px 24px 0; font-size: .82rem; }
+    .footer-bottom a { color: rgba(255,255,255,.4); text-decoration: none; }
+    .footer-bottom a:hover { color: rgba(255,255,255,.8); }
+    .footer-links { display: flex; gap: 20px; }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner, .highlight-row, .highlight-row.reverse { grid-template-columns: 1fr; gap: 40px; direction: ltr; }
+      .steps, .feature-grid { grid-template-columns: 1fr; }
+      .pricing-cards, .faq-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .step-connector { display: none; }
+      nav .nav-links { display: none; }
+    }
+
+    /* ── Animations ─────────────────────────────────────────────── */
+    .fade-up {
+      opacity: 0; transform: translateY(24px);
+      animation: fadeUp .6s forwards;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up:nth-child(1) { animation-delay: .05s; }
+    .fade-up:nth-child(2) { animation-delay: .15s; }
+    .fade-up:nth-child(3) { animation-delay: .25s; }
+    .fade-up:nth-child(4) { animation-delay: .35s; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon"><img src="assets/Attachment_Remover_Logo.PNG" alt="AttachmentRemover logo" style="width:100px;height:100px;object-fit:contain;display:block;" /></div>
+      &nbsp;&nbsp;&nbsp;&nbsp; Attachment Remover
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+      <!--<li><a href="#pricing">Pricing</a></li>-->
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a href="https://workspace.google.com/marketplace" class="nav-cta">Install Free →</a>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        Available on Google Workspace Marketplace
+      </div>
+      <h1>Keep the email.<br><span>Ditch the files.</span></h1>
+      <p>Remove heavy attachments from Gmail without losing a thing — same thread, same sender, same timestamp. Your inbox, lighter.</p>
+      <div class="hero-actions">
+        <a href="https://workspace.google.com/marketplace" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Install for Gmail — it's free
+        </a>
+        <a href="#how-it-works" class="btn-secondary">
+          See how it works
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="hero-stars">
+        <div class="stars">★★★★★</div>
+        <small>Free for your first 10 removals · No credit card needed</small>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="gmail-card">
+        <div class="gmail-card-header">
+          <div class="gmail-card-header-icon">📎</div>
+          <div>
+            <div class="gmail-card-header-text">Attachment Remover</div>
+            <div class="gmail-card-header-sub">Select attachments to remove</div>
+          </div>
+        </div>
+        <div class="gmail-card-body">
+          <div class="gmail-email-meta">
+            <strong>Q3 Financial Report</strong><br>
+            From: finance@acme.com · 3 attachments · 48 MB
+          </div>
+
+          <div class="attachment-row checked">
+            <div class="att-left">
+              <div class="att-icon">📊</div>
+              <div>
+                <div class="att-name">Q3_Report_Final.xlsx</div>
+                <div class="att-size">32.4 MB</div>
+              </div>
+            </div>
+            <div class="att-check on">✓</div>
+          </div>
+
+          <div class="attachment-row checked">
+            <div class="att-left">
+              <div class="att-icon">📄</div>
+              <div>
+                <div class="att-name">Appendix_Data.pdf</div>
+                <div class="att-size">14.1 MB</div>
+              </div>
+            </div>
+            <div class="att-check on">✓</div>
+          </div>
+
+          <div class="attachment-row">
+            <div class="att-left">
+              <div class="att-icon">🖼️</div>
+              <div>
+                <div class="att-name">logo_banner.png</div>
+                <div class="att-size">1.6 MB</div>
+              </div>
+            </div>
+            <div class="att-check"></div>
+          </div>
+
+          <button class="gmail-btn">✂️ Remove Selected (2)</button>
+
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:.72rem;font-weight:700;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">⚙️ Options</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-2);margin-bottom:6px;">
+              <div style="width:14px;height:14px;border-radius:4px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;flex-shrink:0;">✓</div>
+              Move original to Trash
+            </div>
+            <div style="font-size:.75rem;color:var(--ink-3);">Label: <span style="color:var(--ink-2);font-weight:600;">Attachments Removed</span></div>
+          </div>
+
+          <div class="gmail-free-badge">🆓 Free tier: <span>3 / 10</span> removals used</div>
+        </div>
+      </div>
+
+      <div class="hero-float-badge">
+        <div class="hero-float-icon">✅</div>
+        <div class="hero-float-text">
+          <strong>46.5 MB freed</strong>
+          Same thread · Original trashed
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Logos ───────────────────────────────────────────────────── -->
+<div class="logos-strip">
+  <div class="container">
+    <p class="logos-label">Works inside the tools you already use</p>
+    <div class="logos-row">
+      <div class="logo-pill"><span class="logo-pill-icon">📧</span> Gmail</div>
+      <div class="logo-pill"><span class="logo-pill-icon">🗂️</span> Google Workspace</div>
+      <div class="logo-pill"><span class="logo-pill-icon">☁️</span> Google Drive</div>
+      <div class="logo-pill"><span class="logo-pill-icon">🔒</span> Bank-Level Security</div>
+      <div class="logo-pill"><span class="logo-pill-icon">🛡️</span> No data stored</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── How it works ───────────────────────────────────────────── -->
+<section class="how" id="how-it-works">
+  <div class="container">
+    <div class="how-header">
+      <span class="label">How it works</span>
+      <h2>Three steps to a lighter inbox</h2>
+      <p>Open any email with attachments — the add-on sidebar appears automatically.</p>
+    </div>
+    <div class="steps">
+      <div class="step-card fade-up">
+        <div class="step-num">1</div>
+        <h3>Open an email</h3>
+        <p>Click any Gmail email with attachments. The Attachment Remover sidebar loads automatically alongside it.</p>
+        <div class="step-connector"></div>
+      </div>
+      <div class="step-card fade-up">
+        <div class="step-num">2</div>
+        <h3>Select & set options</h3>
+        <p>Tick individual attachments or hit "Remove ALL". Choose whether to trash the original and set a custom label — all in the sidebar.</p>
+        <div class="step-connector"></div>
+      </div>
+      <div class="step-card fade-up">
+        <div class="step-num">3</div>
+        <h3>Done — same thread</h3>
+        <p>A cleaned copy is inserted into the exact same thread with the original sender, timestamp, and body intact. Original is trashed or kept — your call.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features grid ──────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-header">
+      <span class="label">Features</span>
+      <h2>Everything you'd expect, nothing you don't</h2>
+      <p>Built securely on Google's official platform for rock-solid reliability.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feat-card fade-up">
+        <div class="feat-icon">🧵</div>
+        <h3>Stays in the same thread</h3>
+        <p>The cleaned copy drops right back into your original conversation perfectly—not as a new email, and not as a draft.</p>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-icon">👤</div>
+        <h3>Original sender preserved</h3>
+        <p>From address, To, Cc, Bcc, and original timestamp are all retained exactly — the cleaned copy is indistinguishable from the original.</p>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-icon">🚫</div>
+        <h3>No re-sending to anyone</h3>
+        <p>We insert the cleaned email directly into your inbox. Nobody in the To, Cc, or Bcc lines receives a new message or notification.</p>
+      </div>
+      <!--<div class="feat-card fade-up">
+        <div class="feat-icon">📋</div>
+        <h3>Audit banner included</h3>
+        <p>A metadata banner at the top of every cleaned email shows original sender, recipients, date, subject, and exact filenames removed — in red.</p>
+      </div>-->
+      <div class="feat-card fade-up">
+        <div class="feat-icon">🗑️</div>
+        <h3>Trash original — your choice</h3>
+        <p>A checkbox in the sidebar lets you decide: move the original to Trash automatically, or keep it in your inbox alongside the cleaned copy.</p>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-icon">🏷️</div>
+        <h3>Custom labels per removal</h3>
+        <p>Enter any label name before removing. Leave blank for the default "Attachments Removed" label, or type <em>none</em> to skip labelling entirely.</p>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-icon">✂️</div>
+        <h3>Remove selected or all</h3>
+        <p>Tick individual attachments to remove only what you want, or hit "Remove ALL" to strip every file in one click. Sizes shown per file.</p>
+      </div>
+      <!--<div class="feat-card fade-up">
+        <div class="feat-icon">🆓</div>
+        <h3>Free tier built in</h3>
+        <p>First 10 removals are completely free — no credit card needed. A live counter in the sidebar shows exactly how many you have left.</p>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-icon">🛠️</div>
+        <h3>Easy testing mode</h3>
+        <p>Easily add test accounts to try out the Pro features for free before rolling it out to your whole team. Perfect for testing before launch.</p>
+      </div>-->
+    </div>
+  </div>
+</section>
+
+<!-- ── Highlight rows ─────────────────────────────────────────── -->
+<section class="highlight">
+  <div class="container">
+
+    <div class="highlight-row">
+      <div class="highlight-text">
+        <span class="label">Same thread</span>
+        <h2>It looks exactly like the original</h2>
+        <p>Most tools create a separate email or a draft buried in a different folder. AttachmentRemover threads the cleaned copy right back into the conversation — complete with the original sender and timestamp.</p>
+        <ul class="check-list">
+          <li>Correct From address (not yours)</li>
+          <li>Original date and time preserved</li>
+          <li>Reply chain stays intact</li>
+          <li>Custom or default label applied to thread</li>
+        </ul>
+      </div>
+      <div class="highlight-visual">
+        <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Thread view</div>
+        <div class="thread-msg">
+          <div class="thread-msg-header">
+            <div class="thread-msg-from">finance@acme.com</div>
+            <div class="thread-msg-time">Tue 9:14 AM</div>
+          </div>
+          <div class="thread-msg-body">Please find the Q3 report attached for your review…</div>
+          <div class="thread-msg-trash">🗑️ Moved to Trash</div>
+        </div>
+        <div class="thread-msg cleaned">
+          <div class="thread-msg-header">
+            <div class="thread-msg-from">finance@acme.com</div>
+            <div class="thread-msg-time">Tue 9:14 AM</div>
+          </div>
+          <div class="thread-msg-body">Please find the Q3 report attached for your review…</div>
+          <div class="thread-msg-tag">✂️ Cleaned copy · 2 attachments removed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-row reverse">
+      <div class="highlight-text">
+        <span class="label">Privacy first</span>
+        <h2>No one else gets a copy</h2>
+        <p>A common fear with "clean and resend" tools is accidentally notifying the original sender or CC recipients. With AttachmentRemover, that's impossible — we simply update your inbox directly without ever hitting "send".</p>
+        <ul class="check-list">
+          <li>No email sent to To / Cc / Bcc</li>
+          <li>Your data never leaves Google's servers</li>
+          <li>No third-party storage or logging</li>
+          <li>Runs entirely inside your own Google account</li>
+        </ul>
+</div>	
+      <div class="highlight-visual">
+        <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Delivery routing</div>
+        <div class="privacy-diagram">
+          <div class="priv-row blocked">
+            <div class="priv-icon">📤</div>
+            <div class="priv-label">External send to recipients</div>
+            <div class="priv-badge no">Blocked</div>
+          </div>
+          <div class="priv-row blocked">
+            <div class="priv-icon">🌐</div>
+            <div class="priv-label">Third-party servers</div>
+            <div class="priv-badge no">Blocked</div>
+          </div>
+          <div class="priv-row blocked">
+            <div class="priv-icon">💾</div>
+            <div class="priv-label">External data storage</div>
+            <div class="priv-badge no">Never</div>
+          </div>
+          <div class="priv-row allowed">
+            <div class="priv-icon">📥</div>
+            <div class="priv-label">Direct inbox update</div>
+            <div class="priv-badge yes">✓ Only this</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-row">
+      <div class="highlight-text">
+        <span class="label">Audit trail</span>
+        <h2>Always know what was removed</h2>
+        <p>Every cleaned email includes a metadata banner at the top showing the original sender, recipients, date, subject, and the exact list of files that were removed. Never lose track of your email history.</p>
+        <ul class="check-list">
+          <li>Original From / To / Cc shown</li>
+          <li>Removed filenames listed in red</li>
+          <li>Original body preserved below the banner</li>
+          <li>Remaining attachments stay untouched</li>
+        </ul>
+      </div>
+      <div class="highlight-visual">
+        <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Email preview</div>
+        <div class="banner-preview">
+          <div class="banner-preview-title">📋 Cleaned copy — attachments removed</div>
+          <div class="banner-row"><span class="banner-key">From:</span><span class="banner-val">finance@acme.com</span></div>
+          <div class="banner-row"><span class="banner-key">To:</span><span class="banner-val">you@company.com</span></div>
+          <div class="banner-row"><span class="banner-key">Date:</span><span class="banner-val">Tue, 15 Apr 2025 09:14:00</span></div>
+          <div class="banner-row"><span class="banner-key">Removed:</span><span class="banner-val removed">Q3_Report.xlsx, Appendix.pdf</span></div>
+        </div>
+        <div class="email-body-preview">
+          Please find the Q3 report attached for your review. The executive summary is on page 3. Let me know if you have any questions…
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-row reverse">
+      <div class="highlight-text">
+        <span class="label">You're in control</span>
+        <h2>Trash and label — on your terms</h2>
+        <p>Every removal gives you two extra choices right in the sidebar. Decide whether to trash the original, and pick a label name — or skip labelling altogether. No rigid defaults.</p>
+        <ul class="check-list">
+          <li>Trash checkbox — checked by default, easily unticked</li>
+          <li>Keep original in inbox if you want both copies</li>
+          <li>Custom label name typed per-removal</li>
+          <li>Type "none" to skip labelling entirely</li>
+        </ul>
+      </div>
+      <div class="highlight-visual">
+        <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;">⚙️ Options panel</div>
+
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+          <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);margin-bottom:10px;">After creating cleaned copy:</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div style="width:16px;height:16px;border-radius:4px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;flex-shrink:0;">✓</div>
+            <span style="font-size:.85rem;color:var(--ink-2);font-weight:500;">Move original email to Trash</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--ink-3);padding-left:26px;">Uncheck to keep original in inbox</div>
+        </div>
+
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:.75rem;font-weight:700;color:var(--ink-3);margin-bottom:8px;">Label to apply</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:.82rem;color:var(--ink-3);">Attachments Removed</div>
+          <div style="font-size:.72rem;color:var(--ink-3);margin-top:6px;">Leave blank for default · Type "none" to skip</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Pricing ─────────────────────────────────────────────────── -->
+<!-- <section class="pricing" id="pricing">
+  <div class="container">
+    <div class="pricing-header">
+      <span class="label">Pricing</span>
+      <h2>Start free, upgrade when you're ready</h2>
+      <p>Your first 10 attachment removals are completely free — no card required.</p>
+    </div>
+
+    <div class="pricing-toggle">
+      <span class="toggle-label active" id="monthly-label">Monthly</span>
+      <div class="toggle" id="billing-toggle" onclick="toggleBilling()"></div>
+      <span class="toggle-label" id="annual-label">Annual</span>
+      <span class="save-badge" id="save-badge" style="display:none">Save 30%</span>
+    </div>
+
+    <div class="pricing-cards">
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price"><sup>$</sup>0<span class="period">/mo</span></div>
+        <div class="pricing-desc">Perfect for light, occasional cleanup.</div>
+        <a href="https://workspace.google.com/marketplace" class="pricing-btn free-btn">Install Free →</a>
+        <hr class="pricing-divider"/>
+        <ul class="pricing-features-list">
+          <li><span class="pf-icon yes">✓</span> 10 attachment removals total</li>
+          <li><span class="pf-icon yes">✓</span> Same-thread insertion</li>
+          <li><span class="pf-icon yes">✓</span> Original sender preserved</li>
+          <li><span class="pf-icon yes">✓</span> Audit banner</li>
+          <li><span class="pf-icon yes">✓</span> Optional trash + custom labels</li>
+          <li><span class="pf-icon no">✗</span> Unlimited removals</li>
+          <li><span class="pf-icon no">✗</span> Priority support</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card pro">
+        <div class="pricing-tier pro">Pro</div>
+        <div class="pricing-price" id="pro-price"><sup>$</sup>2.99<span class="period">/mo</span></div>
+        <div class="pricing-desc" id="pro-desc">Unlimited removals. Billed monthly.</div>
+        <a href="https://your-payment-link.com" class="pricing-btn pro-btn">Get Pro →</a>
+        <hr class="pricing-divider"/>
+        <ul class="pricing-features-list">
+          <li><span class="pf-icon yes">✓</span> <strong>Unlimited</strong> attachment removals</li>
+          <li><span class="pf-icon yes">✓</span> Same-thread insertion</li>
+          <li><span class="pf-icon yes">✓</span> Original sender preserved</li>
+          <li><span class="pf-icon yes">✓</span> Audit banner</li>
+          <li><span class="pf-icon yes">✓</span> Optional trash + custom labels</li>
+          <li><span class="pf-icon yes">✓</span> Licence key activation</li>
+          <li><span class="pf-icon yes">✓</span> Priority email support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+<!-- ── FAQ ─────────────────────────────────────────────────────── -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="faq-header">
+      <span class="label">FAQ</span>
+      <h2>Questions we get a lot</h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <div class="faq-q">Does it actually send the email to anyone?</div>
+        <div class="faq-a">No. We update your mailbox directly—it's like copying a file into a folder. Nobody in To, Cc, or Bcc receives anything or gets notified.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens to the original email?</div>
+        <div class="faq-a">That's up to you. A checkbox in the sidebar — checked by default — moves the original to Trash after the cleaned copy is created. Uncheck it to keep both in your inbox simultaneously.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I remove just some attachments, not all?</div>
+        <div class="faq-a">Yes. Use the checkboxes to select only the heavy files you want removed. Remaining attachments stay on the cleaned copy exactly as they were.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I use a custom label instead of the default one?</div>
+        <div class="faq-a">Yes. There's a label input field in the Options section. Leave it blank to use the default "Attachments Removed" label, type any name to create a custom label, or type <em>none</em> to skip labelling entirely. Gmail creates the label automatically if it doesn't exist.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does uninstalling reset my free quota?</div>
+        <div class="faq-a">No. Your usage is linked directly to your Google account securely. Reinstalling does not reset the counter.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is my email data stored anywhere?</div>
+        <div class="faq-a">Never. The add-on runs entirely within your Google account. No email content, metadata, or attachments are sent to or stored on our servers.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What Gmail permissions does it need and why?</div>
+        <div class="faq-a">We only request the permissions necessary to do the job: managing your labels, moving original emails to the trash, and securely updating your inbox with the clean copies.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Will inline images be removed?</div>
+        <div class="faq-a">No. Inline images embedded directly in the email body are never touched — only true file attachments listed in the sidebar are removable.</div>
+      </div>
+      <!--<div class="faq-item">
+        <div class="faq-q">How do I activate my Pro licence?</div>
+        <div class="faq-a">After purchase you'll receive a licence key by email. Open any email in Gmail, click the add-on sidebar, and paste the key into the "Activate Licence" field that appears when your free quota runs out.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is there a way to test this for my team?</div>
+        <div class="faq-a">Yes. Approved email addresses bypass all limits and can be set up to always behave as Pro users. Admins can add tester emails directly in the configuration before deploying.</div>
+      </div> -->
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────── -->
+<div class="cta-banner">
+  <div class="container">
+    <h2>Your inbox is waiting to breathe.</h2>
+    <p>Free to install. First 10 removals on us. No credit card needed.</p>
+    <a href="https://workspace.google.com/marketplace" class="btn-white">
+      <img src="assets/Attachment_Remover_Logo.PNG" alt="AttachmentRemover logo" style="width:50px;height:50px;object-fit:contain;display:block;" /> Install for Gmail — Free
+    </a>
+    <div class="cta-sub">Works with Gmail and Google Workspace accounts</div>
+  </div>
+</div>
+
+<!-- ── Footer ──────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand-name">
+        <div class="footer-brand-icon"><img src="assets/Attachment_Remover_Logo.PNG" alt="AttachmentRemover logo" style="width:50px;height:50px;object-fit:contain;display:block;" /></div>
+        AttachmentRemover
+      </div>
+      <p class="footer-desc">Remove attachments from Gmail without losing the email. Same thread, same sender, same timestamp. Built for people who care about their inbox.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#features">Features</a></li>
+        <!-- <li><a href="#pricing">Pricing</a></li> -->
+        <li><a href="https://workspace.google.com/marketplace">Install</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="mailto:XXXX">Contact</a></li>
+        <li><a href="#">Changelog</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="terms.html">Terms of Service</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 AttachmentRemover. All rights reserved.</span>
+    <div class="footer-links">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="mailto:XXXX">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Billing toggle ────────────────────────────────────────────
+  let isAnnual = false;
+  function toggleBilling() {
+    isAnnual = !isAnnual;
+    const toggle    = document.getElementById('billing-toggle');
+    const mLabel    = document.getElementById('monthly-label');
+    const aLabel    = document.getElementById('annual-label');
+    const price     = document.getElementById('pro-price');
+    const desc      = document.getElementById('pro-desc');
+    const saveBadge = document.getElementById('save-badge');
+
+    toggle.classList.toggle('annual', isAnnual);
+    mLabel.classList.toggle('active', !isAnnual);
+    aLabel.classList.toggle('active',  isAnnual);
+    saveBadge.style.display = isAnnual ? 'inline-block' : 'none';
+
+    if (isAnnual) {
+      price.innerHTML = '<sup>$</sup>24.99<span class="period">/year</span>';
+      desc.textContent = 'Unlimited removals. Billed annually. Save 30%.';
+    } else {
+      price.innerHTML = '<sup>$</sup>2.99<span class="period">/mo</span>';
+      desc.textContent = 'Unlimited removals. Billed monthly.';
+    }
+  }
+
+  // ── Scroll-triggered fade-up ──────────────────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.step-card, .feat-card, .faq-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
